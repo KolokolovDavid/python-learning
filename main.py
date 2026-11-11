@@ -36,4 +36,9 @@ def delete_user(user_id: int):
     del users[user_id]
     return {"message": "Пользователь удален"}
 
-@app.put("/users")
+@app.put("/users/{user_id}")
+def update_user(user_id: int, user: UserCreate):
+    if user_id not in users:
+        raise HTTPException(status_code=404, detail="Пользователь не найден")
+    users[user_id] = {"name": user.name, "age": user.age}
+    return {"id": user_id, "name": user.name, "age": user.age}
