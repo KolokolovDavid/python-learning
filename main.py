@@ -29,7 +29,7 @@ def create_user(user: UserCreate):
     users[new_id] = {"name": user.name, "age": user.age}
     return {"id": new_id, "name": user.name, "age": user.age}
 
-@app.delete("/users")
+@app.delete("/users/{user_id}")
 def delete_user(user_id: int):
     if user_id not in users:
         raise HTTPException(status_code=404, detail="Пользователь не найден")
