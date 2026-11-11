@@ -17,7 +17,7 @@ users = {
 def get_users():
     return users
 
-@app.get("/user/{user_id}")
+@app.get("/users/{user_id}")
 def get_user(user_id: int):
     if user_id not in users:
         raise HTTPException(status_code=404, detail="Пользователь не найден")
@@ -35,3 +35,5 @@ def delete_user(user_id: int):
         raise HTTPException(status_code=404, detail="Пользователь не найден")
     del users[user_id]
     return {"message": "Пользователь удален"}
+
+@app.put("/users")
