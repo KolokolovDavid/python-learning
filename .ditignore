@@ -1,0 +1,5 @@
+__pyceche__/
+*.pyc
+.vemv/
+.env
+*.db
