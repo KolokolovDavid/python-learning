@@ -1,5 +1,19 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
+import sqlite3
+
+def get_db():
+    conn = sqlite3.connect("users.db")
+    conn.row_factory = sqlite3.Row
+    return conn
+
+def init_db():
+    conn = get_db()
+    conn.execute("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, age INTEGER)")    
+    conn.commit()
+    conn.close()
+
+init_db()
 
 class UserCreate(BaseModel):
     name: str
@@ -7,38 +21,53 @@ class UserCreate(BaseModel):
 
 app = FastAPI()
 
-users = {
-    1: {"name": "David", "age": 17},
-    2: {"name": "Anna", "age": 16},
-    3: {"name": "Boris", "age": 20}
-}
-
 @app.get("/users")
 def get_users():
-    return users
+    conn = get_db()
+    rows = conn.execute("SELECT * FROM users").fetchall()
+    conn.close()
+    result = []
+    for row in rows:
+        result.append(dict(row))
+    return result
+    
 
 @app.get("/users/{user_id}")
 def get_user(user_id: int):
-    if user_id not in users:
+    conn = get_db()
+    row = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
+    conn.close()
+    if row is None:
         raise HTTPException(status_code=404, detail="Пользователь не найден")
-    return users[user_id]
+    return dict(row) 
 
 @app.post("/users")
 def create_user(user: UserCreate):
-    new_id = max(users) + 1
-    users[new_id] = {"name": user.name, "age": user.age}
+    conn = get_db()
+    cursor = conn.execute("INSERT INTO users (name, age) VALUES (?,?)", (user.name, user.age))
+    conn.commit()
+    new_id = cursor.lastrowid
+    conn.close()
     return {"id": new_id, "name": user.name, "age": user.age}
 
 @app.delete("/users/{user_id}")
 def delete_user(user_id: int):
-    if user_id not in users:
-        raise HTTPException(status_code=404, detail="Пользователь не найден")
-    del users[user_id]
+    conn = get_db()
+    cursor = conn.execute("DELETE FROM users WHERE id = ?", (user_id,))
+    conn.commit()
+    deleted = cursor.rowcount
+    conn.close()
+    if deleted == 0:
+        raise HTTPException(status_code=404, detail="Не удалось удалить пользователя")
     return {"message": "Пользователь удален"}
 
 @app.put("/users/{user_id}")
 def update_user(user_id: int, user: UserCreate):
-    if user_id not in users:
-        raise HTTPException(status_code=404, detail="Пользователь не найден")
-    users[user_id] = {"name": user.name, "age": user.age}
+    conn = get_db()
+    cursor = conn.execute("UPDATE users SET name = ?, age = ? WHERE id = ?", (user.name, user.age, user_id))
+    conn.commit()
+    updated = cursor.rowcount
+    conn.close()
+    if updated == 0:
+        raise HTTPException(status_code=404, detail="Не удалось обновить пользователя")
     return {"id": user_id, "name": user.name, "age": user.age}
