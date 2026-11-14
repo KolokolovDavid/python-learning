@@ -3,6 +3,10 @@
 Учебный REST API на FastAPI: CRUD для пользователей.
 
 ## Запуск
+python -m vevn .venv
+
+.vevn\Scripts\activate
+
 py -m pip install -r requirements.txt
 
 py -m uvicorn main:app --reload
